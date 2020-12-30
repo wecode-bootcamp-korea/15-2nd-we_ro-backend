@@ -1,4 +1,4 @@
-from my_settings import DATABASES, SECRET_KEY, ALGORITHM
+from my_settings import DATABASES, SECRET_KEY, ALGORITHM, LOGGING
 
 """
 Django settings for we_ro project.
@@ -146,3 +146,7 @@ CORS_ALLOW_HEADERS = (
     'x-csrftoken',
     'x-requested-with',
 )
+
+APPEND_SLASH = False
+
+LOGGING = LOGGING
