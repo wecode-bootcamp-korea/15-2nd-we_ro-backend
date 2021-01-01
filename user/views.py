@@ -7,7 +7,7 @@ import requests
 from django.http      import JsonResponse
 from django.views     import View
 
-from user.models import User
+from user.models import User, Character
 from user.utils  import SignInAuthorization, ValueErrorTypeChecking
 from my_settings import SECRET_KEY, ALGORITHM
 
@@ -16,7 +16,6 @@ REGEX_EMAIL         = '[^@]+@[^@]+\.[^@]+'
 REGEX_PASSWORD      = '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{8,18}'
 REGEX_DATE_OF_BIRTH = '(19[0-9][0-9]|20\d{2})-(0[0-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])'
 REGEX_PHONE_NUMBER  = '(010)(-{1}\d{4}-{1}\d{4})'
-
 
 class SignUpView(View):
     def post(self, request):
@@ -148,3 +147,85 @@ class PhonenumberChangeView(View):
             return ValueErrorTypeChecking(data)
         except KeyError:
             return JsonResponse({'MESSAGE' : 'INVALID_KEY'}, status=400)
+
+
+class CharacterView(View):
+    @SignInAuthorization
+    def get(self, request):
+        try:
+            signed_user = request.user
+            characters  = Character.objects.filter(user_id=signed_user.id).all()
+
+            results =[
+                {
+                    'id' : character.id,
+                    'name' : character.name,
+                    'profile_image_url' : character.profile_image_url,
+                }
+                for character in characters
+            ]
+            return JsonResponse({'MESSAGE' : 'SUCCESS', 'RESULTS' : results}, status=200)
+        except KeyError:
+            return JsonResponse({'MESSAGE' : 'INVALID_KEY'}, status=400)
+        except ValueError:
+            return ValueErrorTypeChecking(data)
+
+    @SignInAuthorization
+    def post(self, request):
+        data = json.loads(request.body)
+        try:
+            name        = data['name']
+            signed_user = request.user
+
+            if Character.objects.filter(user_id=signed_user.id).filter(name=name).exists():
+                return JsonResponse({'MESSAGE' : 'CHARACTER_NAME_EXISTS'}, status=400)
+
+            Character(
+                user_id = signed_user.id,
+                name    = name,
+            ).save()
+
+            return JsonResponse({'MESSAGE' : 'SUCCESS'}, status=200)
+        except KeyError:
+            return JsonResponse({'MESSAGE' : 'INVALID_KEY'}, status=400)
+        except ValueError:
+            return ValueErrorTypeChecking(data)
+
+    @SignInAuthorization
+    def delete(self, request, character_id):
+        try:
+            signed_user = request.user
+
+            character = Character.objects.filter(user_id=signed_user.id).filter(id=character_id).get()
+
+            character.delete()
+            return JsonResponse({'MESSAGE' : 'SUCCESS'}, status=200)
+        except Character.DoesNotExist:
+            return JsonResponse({'MESSAGE' : 'CHARACTER_DOES_NOT_EXIST'}, status=402)
+        except KeyError:
+            return JsonResponse({'MESSAGE' : 'INVALID_KEY'}, status=401)
+
+    @SignInAuthorization
+    def patch(self, request, character_id):
+        data = json.loads(request.body)
+        try:
+            new_name    = data.get('new_name')
+            new_image   = data.get('new_image')
+            signed_user = request.user
+
+            if Character.objects.filter(user_id=signed_user.id).filter(id=character_id).exists():
+                character = Character.objects.get(id=character_id, user_id=signed_user.id)
+
+            if new_name is not None:
+                character.name = new_name
+
+            if new_image is not None:
+                character.image = new_image
+
+            character.save()
+
+            return JsonResponse({'MESSAGE' : 'SUCCESS'}, status=200)
+        except Character.DoesNotExist:
+            return JsonResponse({'MESSAGE' : 'INVALID_CHARACTER'}, status=400)
+        except ValueError:
+            return ValueErrorTypeChecking()
