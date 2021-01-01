@@ -4,23 +4,23 @@ from user.models  import Character
 from music.models import Music, Album, Artist
 
 
-class StorageMylist(models.Model):
+class Mylist(models.Model):
     name       = models.CharField(max_length=45)
     character  = models.ForeignKey(Character, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    music      = models.ManyToManyField(Music, through = 'StorageMyListMusic')
+    music      = models.ManyToManyField(Music, through = 'MyListMusic')
 
     class Meta:
-        db_table = 'storage_mylists'
+        db_table = 'mylists'
 
 
-class StorageMylistMusic(models.Model):
-    storage_mylist = models.ForeignKey(StorageMylist, on_delete=models.CASCADE)
+class MylistMusic(models.Model):
+    storage_mylist = models.ForeignKey(Mylist, on_delete=models.CASCADE)
     music          = models.ForeignKey(Music, on_delete=models.CASCADE)
 
     class Meta:
-        db_table = 'storage_mylist_musics'
+        db_table = 'mylist_musics'
 
 
 class StorageMusic(models.Model):

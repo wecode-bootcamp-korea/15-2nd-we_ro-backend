@@ -23,6 +23,9 @@ def ValueErrorTypeChecking(data):
     if not isinstance(data['new_phone_number'], str):
         return JsonResponse({'MESSAGE' : 'INVALID_NEW_PHONE_NUMBER_TYPE'}, status=400)
 
+    if not isinstance(data['new_image'], str):
+        return JsonResponse({'MESSAGE' : 'INVALID_NEW_IMAGE_TYPE'}, status=400)
+
 def SignInAuthorization(function):
     def wrapper(self, request, *args, **kwargs):
         try:
