@@ -8,7 +8,7 @@ from django.http      import JsonResponse
 from django.views     import View
 
 from user.models import User
-from user.utils  import ValueErrorTypeChecking
+from user.utils  import SignInAuthorization, ValueErrorTypeChecking
 from my_settings import SECRET_KEY, ALGORITHM
 
 
@@ -59,8 +59,8 @@ class SignUpView(View):
 
 class SignInView(View):
     def post(self, request):
+        data     = json.loads(request.body)
         try:
-            data     = json.loads(request.body)
             email    = data['email']
             password = data['password']
 
@@ -76,10 +76,75 @@ class SignInView(View):
                 return JsonResponse({'MESSAGE' : 'INVALID_EMAIL_OR_PASSWORD'}, status=400)
 
             access_token = jwt.encode({'id' : signed_user.id}, SECRET_KEY, algorithm=ALGORITHM)
-
             return JsonResponse({'MESSAGE' : 'SUCCESS', 'ACCESS_TOKEN' : access_token}, status=200)
+        except User.DoesNotExist:
+            return JsonResponse({'MESSAGE' : 'INVALID_USER'}, status=400)
         except ValueError:
             return ValueErrorTypeChecking(data)
         except KeyError:
             return JsonResponse({'MESSAGE' : 'INVALID_KEY'}, status=400)
 
+
+class PasswordCheckView(View):
+    @SignInAuthorization
+    def post(self, request):
+        data = json.loads(request.body)
+        try:
+            user_id      = data['user_id']
+            password     = data['password']
+            signed_user  = User.objects.get(id=user_id)
+
+            password_validation = bcrypt.checkpw(password.encode('utf-8'), signed_user.password.encode('utf-8'))
+
+            if not password_validation:
+                return JsonResponse({'MESSAGE' : 'PASSWORD_IS_DIFFERENT'}, status=400)
+            return JsonResponse({'MESSAGE' : 'SUCCESS'}, status=200)
+        except ValueError:
+            return ValueErrorTypeChecking(data)
+        except KeyError:
+            return JsonResponse({'MESSAGE' : 'INVALID_KEY'}, status=400)
+
+
+class PasswordChangeView(View):
+    @SignInAuthorization
+    def patch(self, request):
+        data = json.loads(request.body)
+        try:
+            new_password = data['new_password']
+            signed_user  = request.user
+
+            password_validation = bcrypt.checkpw(new_password.encode('utf-8'), signed_user.password.encode('utf-8'))
+
+            if password_validation:
+                return JsonResponse({'MESSAGE' : 'PASSWORD_IS_SAME'}, status=400)
+
+            hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+            signed_user.password = hashed_password
+            signed_user.save()
+            return JsonResponse({'MESSAGE' : 'SUCCESS'}, status=200)
+        except ValueError:
+            return ValueErrorTypeChecking(data)
+        except KeyError:
+            return JsonResponse({'MESSAGE' : 'INVALID_KEY'}, status=400)
+
+
+class PhonenumberChangeView(View):
+    @SignInAuthorization
+    def patch(self, request):
+        data = json.loads(request.body)
+        try:
+            new_phone_number = data['new_phone_number']
+            signed_user  = request.user
+
+            if new_phone_number == signed_user.phone_number:
+                return JsonResponse({'MESSAGE' : 'PHONE_NUMBER_IS_SAME'}, status=400)
+
+            signed_user.phone_number = new_phone_number
+            signed_user.save()
+
+            return JsonResponse({'MESSAGE' : 'SUCCESS'}, status=200)
+        except ValueError:
+            return ValueErrorTypeChecking(data)
+        except KeyError:
+            return JsonResponse({'MESSAGE' : 'INVALID_KEY'}, status=400)
