@@ -8,7 +8,7 @@ from django.http      import JsonResponse
 from django.views     import View
 
 from user.models import User
-from user.utils  import ValueErrorTypeChecking
+from user.utils  import SignInAuthorization, ValueErrorTypeChecking
 from my_settings import SECRET_KEY, ALGORITHM
 
 
@@ -83,3 +83,88 @@ class SignInView(View):
         except KeyError:
             return JsonResponse({'MESSAGE' : 'INVALID_KEY'}, status=400)
 
+class PasswordCheckView(View):
+    class SignInView(View):
+    def post(self, request):
+        try:
+            data     = json.loads(request.body)
+            email    = data['email']
+            password = data['password']
+
+            user_validation = User.objects.filter(kakao_id__isnull=True).filter(email=email)
+
+            if not user_validation:
+                return JsonResponse({'MESSAGE' : 'INVALID_EMAIL_OR_PASSWORD'}, status=400)
+
+            signed_user =user_validation.get()
+            password_validation = bcrypt.checkpw(password.encode('utf-8'), signed_user.password.encode('utf-8'))
+
+            if not password_validation:
+                return JsonResponse({'MESSAGE' : 'INVALID_EMAIL_OR_PASSWORD'}, status=400)
+
+            access_token = jwt.encode({'id' : signed_user.id}, SECRET_KEY, algorithm=ALGORITHM)
+
+            return JsonResponse({'MESSAGE' : 'SUCCESS', 'ACCESS_TOKEN' : access_token}, status=200)
+        except ValueError:
+            return ValueErrorTypeChecking(data)
+        except KeyError:
+            return JsonResponse({'MESSAGE' : 'INVALID_KEY'}, status=400)
+
+    @SignInAuthorization
+    def post(self, request):
+        try:
+            data         = json.loads(request.body)
+            password     = data['password']
+            access_token = request.headers.get('Authorization')
+            payload      = jwt.decode(access_token, SECRET_KEY, algorithms=ALGORITHM)
+            signed_user  = User.objects.get(id=payload['user_id'])
+
+            password_validation = bcrypt.checkpw(password.encode('utf-8'), signed_user.password.encode('utf-8'))
+
+            if not password_validation:
+                return JsonResponse({'MESSAGE' : 'PASSWORD_IS_DIFFERENT'}, status=400)
+
+            return JsonResponse({'MESSAGE' : 'SUCCESS'}, status=200)
+        except KeyError:
+            return JsonResponse({'MESSAGE' : 'INVALID_KEY'}, status=400)
+
+
+class PasswordChangeView(View):
+    def patch(self, request):
+        try:
+            data         = json.loads(request.body)
+            new_password = data['new_password']
+            access_token = request.headers.get('Authorization')
+            payload      = jwt.decode(access_token, SECRET_KEY, algorithms=ALGORITHM)
+            signed_user  = User.objects.get(id=payload['user_id'])
+
+            password_validation = bcrypt.checkpw(password.encode('utf-8'), signed_user.password.encode('utf-8'))
+
+            if password_validation:
+                return JsonResponse({'MESSAGE' : 'PASSWORD_IS_SAME'}, status=400)
+
+            signed_user.password = hashed_password
+            signed_user.save()
+            return JsonResponse({'MESSAGE' : 'SUCCESS'}, status=200)
+        except KeyError:
+            return JsonResponse({'MESSAGE' : 'INVALID_KEY'}, status=400)
+
+
+class PhonenumberChangeView(View):
+    def patch(self, request):
+        try:
+            data         = json.loads(request.body)
+            phone_number = data['phone_number']
+            access_token = request.headers.get('Authorization')
+            payload      = jwt.decode(access_token, SECRET_KEY, algorithms=ALGORITHM)
+            signed_user  = User.objects.get(id=payload['user_id'])
+
+            if phone_number == signed_user.phone_number:
+                return JsonResponse({'MESSAGE' : 'PHONE_NUMBER_IS_SAME'}, status=400)
+
+            signed_user.phone_number = phone_number
+            signed_user.save()
+
+            return JsonResponse({'MESSAGE' : 'SUCCESS'}, status=200)
+        except KeyError:
+            return JsonResponse({'MESSAGE' : 'INVALID_KEY'}, status=400)
