@@ -7,7 +7,7 @@ from django.http      import JsonResponse
 from django.views     import View
 from django.db.models import Q
 
-from user.models import User, Platform
+from user.models import User, Platform, Character
 from my_settings import SECRET_KEY, ALGORITHM
 
 
@@ -50,6 +50,22 @@ class SignUpView(View):
                 phone_number  = phone_number,
                 platform_id   = Platform.objects.get(name=platform).id
             )
+            return JsonResponse({'MESSAGE' : 'SUCCESS'}, status=200)
+        except KeyError:
+            return JsonResponse({'MESSAGE' : 'INVALID_KEY'}, status=400)
+        except ValueError:
+            return JsonResponse({'MESSAGE' : 'INVALID_VALUE'}, status=400)
+
+
+
+
+class CharacterCreateView(View):
+    def post(self, request):
+        try:
+            data = json.loads(request.body)
+            name = data['name']
+            user_id = 1
+            Character.objects.create(user_id=user_id, name=name)
             return JsonResponse({'MESSAGE' : 'SUCCESS'}, status=200)
         except KeyError:
             return JsonResponse({'MESSAGE' : 'INVALID_KEY'}, status=400)
