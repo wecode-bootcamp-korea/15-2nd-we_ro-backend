@@ -36,10 +36,43 @@ class CharacterCreateView(View):
         except ValueError:
             return JsonResponse({'MESSAGE' : 'INVALID_VALUE'}, status=400)
 
-class CharacterUpdateView(View):
-    def patch(self, request, user_id):
+
+class CharacterNameChangeView(View):
+    def patch(self, request, user_id, character_id):
         try:
             data = json.loads(request.body)
             new_name = data['new_name']
 
-            Character()
+            character = Character.objects.filter(user_id=user_id).filter(character_id=character_id).get()
+
+            character.name = new_name
+            character.save()
+
+            return JsonResponse({'MESSAGE' : 'SUCCESS'}, status=200)
+        except KeyError:
+            return JsonResponse({'MESSAGE' : 'INVALID_KEY'}, status=400)
+        except ValueError:
+            return JsonResponse({'MESSAGE' : 'INVALID_VALUE'}, status=400)
+
+
+class CharacterImageChangeView(View):
+    def patch(self, request, user_id, character_id):
+        try:
+            data = json.loads(request.body)
+            new_profile_image_url = data['new_profile_image_url']
+
+            character = Character.objects.filter(user_id=user_id).filter(character_id=character_id).get()
+
+            character.profile_image_url = new_profile_image_url
+            character.save()
+
+            return JsonResponse({'MESSAGE' : 'SUCCESS'}, status=200)
+        except KeyError:
+            return JsonResponse({'MESSAGE' ; 'INVALID_KEY'}, status=400)
+        except ValueError:
+            return JsonResponse({'MESSAGE' : 'INVALID_VALUE'}, status=400)
+
+
+
+
+
