@@ -9,7 +9,6 @@ from django.views     import View
 from django.shortcuts import redirect
 
 from user.models import User
-from user.utils  import ValueErrorTypeChecking
 from my_settings import SECRET_KEY, ALGORITHM, KAKAO_KEY
 
 
@@ -87,7 +86,7 @@ class SignInView(View):
 
 class KakaoSignInView(View):
     def get(self, request):
-        client_id    = KAKAO_KEY['REST_API_KEY']
+        client_id = KAKAO_KEY['REST_API_KEY']
         redirect_uri = "http://127.0.0.1:8000/users/signin/kakao/callback"
         return redirect(
             f"https://kauth.kakao.com/oauth/authorize?client_id={client_id}&redirect_uri={redirect_uri}&response_type=code"
@@ -102,9 +101,10 @@ class KakaoSignInCallbackView(View):
             token_request = requests.get(
                 f"https://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id={client_id}&redirect_uri={redirect_uri}&code={code}"
             )
-            token_json         = token_request.json()
+            token_json   = token_request.json()
             kakao_access_token = token_json.get('access_token')
-            profile_request    = requests.get(
+
+            profile_request = requests.get(
                 "https://kapi.kakao.com/v2/user/me", headers={"Authorization" : f"bearer {kakao_access_token}"},
             )
             profile_json  = profile_request.json()  #json 형태로 변환해주는 듯
@@ -120,14 +120,18 @@ class KakaoSignInCallbackView(View):
                     email    = kakao_email,
                     kakao_id = kakao_id,
                 ).save()
-                signed_user  = user_validation.get()
-                access_token = jwt.encode({'id' : signed_user.id}, SECRET_KEY, algorithm=ALGORITHM)
 
-            else:
-                signed_user  = user_validation.get()
-                access_token = jwt.encode({'id' : signed_user.id}, SECRET_KEY, algorithm=ALGORITHM)
+            signed_user = user_validation.get()
+            access_token = jwt.encode({'id' : signed_user.id}, SECRET_KEY, algorithm=ALGORITHM)
 
+            print('====================starts=====================')
+            print(signed_user.id)
+            print('access_token:', access_token)
+            print('====================finish=====================')
             return JsonResponse({'MESSAGE' : 'SUCCESS', 'ACCESS_TOKEN' : access_token}, status=200)
         except Exception as e:
             return JsonResponse({'MESSAGE' : str(e)}, status=400)
+
+
+
 
