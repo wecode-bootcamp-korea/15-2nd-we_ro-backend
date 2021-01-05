@@ -19,4 +19,5 @@ urlpatterns = [
 #    path('user', include('user.urls')),
     path('music', include('music.urls')),
 #    path('storage', include('storage.urls')),
+    path('users', include('user.urls')),
 ]

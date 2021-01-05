@@ -2,19 +2,13 @@ from django.db    import models
 
 from music.models import Genre, Artist, Chart
 
-class Platform(models.Model):
-    name = models.CharField(max_length=10)
-
-    class Meta:
-        db_table = 'platforms'
-
 
 class User(models.Model):
     email         = models.EmailField()
     password      = models.CharField(max_length=250)
-    date_of_birth = models.DateField()
-    phone_number  = models.CharField(max_length=20)
-    platform      = models.ForeignKey(Platform, on_delete=models.CASCADE)
+    date_of_birth = models.DateField(null=True)
+    phone_number  = models.CharField(max_length=20, null=True)
+    kakao_id      = models.IntegerField(null=True)
 
     class Meta:
         db_table = 'users'
