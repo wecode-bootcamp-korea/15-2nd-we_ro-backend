@@ -16,8 +16,8 @@ class Mylist(models.Model):
 
 
 class MylistMusic(models.Model):
-    storage_mylist = models.ForeignKey(Mylist, on_delete=models.CASCADE)
-    music          = models.ForeignKey(Music, on_delete=models.CASCADE)
+    mylist = models.ForeignKey(Mylist, on_delete=models.CASCADE)
+    music  = models.ForeignKey(Music, on_delete=models.CASCADE)
 
     class Meta:
         db_table = 'mylist_musics'

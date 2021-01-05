@@ -5,7 +5,8 @@ import bcrypt
 from django.http import JsonResponse
 
 from my_settings import SECRET_KEY, ALGORITHM
-from user.models import User
+from user.models import User, Character
+
 
 def ValueErrorTypeChecking(data):
     if not isinstance(data['email'], str):
@@ -33,11 +34,29 @@ def SignInAuthorization(function):
             payload      = jwt.decode(access_token, SECRET_KEY, algorithms=ALGORITHM)
             signed_user  = User.objects.get(id=payload['id'])
             request.user = signed_user
+
             return function(self, request, *args, **kwargs)
-        except User.DoesNotExist:
-            return JsonResponse({'MESSAGE' : 'INVALID_USER'}, status=400)
         except jwt.exceptions.DecodeError:
             return JsonResponse({'MESSAGE' : 'INVALID_ACCESS_TOKEN'}, status=400)
+        except Character.DoesNotExist:
+            return JsonResponse({'MESSAGE' : 'CREATE_CHARACTER_FIRST'}, status=400)
+        except KeyError:
+            return JsonResponse({'MESSAGE' : 'SIGN_UP_FIRST'}, status=400)
+    return wrapper
+
+def CharacterAuthorization(function):
+    def wrapper(self, request, *args, **kwargs):
+        try:
+            request.headers.get('Character')
+            access_character_id = request.headers.get('Character')
+            access_character    = Character.objects.get(id=access_character_id)
+            request.character   = access_character
+
+            return function(self, request, *args, **kwargs)
+        except jwt.exceptions.DecodeError:
+            return JsonResponse({'MESSAGE' : 'INVALID_ACCESS_TOKEN'}, status=400)
+        except Character.DoesNotExist:
+            return JsonResponse({'MESSAGE' : 'CREATE_CHARACTER_FIRST'}, status=400)
         except KeyError:
             return JsonResponse({'MESSAGE' : 'SIGN_UP_FIRST'}, status=400)
     return wrapper
