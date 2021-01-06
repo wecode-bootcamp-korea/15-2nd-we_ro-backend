@@ -1,108 +1,208 @@
+import jwt
 import json
 import bcrypt
 import jwt
 
-from django.test      import Client
-from django.test      import TestCase
+from django.test   import Client, TestCase
 
-from user.models import User
+from user.models import User, Character
 from my_settings import SECRET_KEY, ALGORITHM
 
-class UserSignUpTest(TestCase):
+
+
+class CharacterViewTest(TestCase):
     def setUp(self):
-        password = '123qwe!@#QWE'
+        password        = '123qwe!@#QWE'
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
-        User(
-            email = 'kst6294@gmail.com',
-            password = hashed_password,
-            date_of_birth = '1991-09-04',
-            phone_number = '010-1234-1234',
-        ).save()
-
-    def tearDown(self):
-        User.objects.all().delete()
-
-    def test_signupview_post_create_success_with_no_duplicated_user(self):
-        client = Client()
-        user = {
-            'email' : 'suntae@gmail.com',
-            'password' : '123qwe!@#QWE',
-            'date_of_birth' : '1991-09-04',
-            'phone_number' : '010-1234-1234',
-        }
-
-        response = client.post('/users/signup', json.dumps(user), content_type='application/json')
-        self.assertEqual(response.status_code, 200)
-
-    def test_signupview_post_create_fail_with_duplicated_user(self):
-        client = Client()
-        user = {
-            'email' : 'kst6294@gmail.com',
-            'password' : '123qwe!@#QWE',
-            'date_of_birth' : '1991-09-04',
-            'phone_number' : '010-1234-1234',
-        }
-
-        response = client.post('/users/signup', json.dumps(user), content_type='application/json')
-        self.assertEqual(response.status_code, 400)
-
-
-class UserSignInTest(TestCase):
-    def setUp(self):
-        password = '123qwe!@#QWE'
-        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-
-        User(
-            email = 'kst6294@gmail.com',
+        user = User(
+            email         = 'kst6294@gmail.com',
             password      = hashed_password,
             date_of_birth = '1991-09-04',
             phone_number  = '010-1234-1234',
-        ).save()
+        )
 
-        email         = 'kst6294@gmail.com'
-        password      = '123qwe!@#QWE'
-        date_of_birth = '1991-09-04'
-        phone_number  = '010-1234-1234'
+        user.save()
+
+        self.access_token = jwt.encode({'id' : User.objects.get(id=user.id).id}, SECRET_KEY, algorithm=ALGORITHM)
+        self.user    = user
+        self.user_id = user.id
+
+        character = Character(
+            name = '사장님',
+            user_id = self.user_id,
+        )
+
+        character.save()
+        self.character    = character
+        self.character_id = character.id
+
 
     def tearDown(self):
         User.objects.all().delete()
 
-    def test_signinview_post_success_with_user(self):
+    def test_character_read_success(self):
         client = Client()
+
+        headers = {'HTTP_Authorization' : self.access_token}
+
         user = {
-            'email'         : 'kst6294@gmail.com',
-            'password'      : '123qwe!@#QWE',
-            'date_of_birth' : '1991-09-04',
-            'phone_number'  : '010-1234-1234',
+            'user_id' : self.user_id,
+            'password' : '123qwe!@#QWE',
         }
-        response     = client.post('/users/signin', json.dumps(user), content_type='application/json')
-        access_token = response.json()['ACCESS_TOKEN']
+
+        response = client.post('/users/password/check', json.dumps(user), content_type='application/json', **headers)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {'MESSAGE' : 'SUCCESS', 'ACCESS_TOKEN' : access_token})
+        self.assertEqual(response.json(), {'MESSAGE' : 'SUCCESS'})
 
-    def test_signinview_post_fail_with_no_user(self):
+    def test_character_create_success(self):
         client = Client()
-        user = {
-            'email'         : 'suntae@gmail.com',
-            'password'      : '123qwe!@#QWE',
-            'date_of_birth' : '1991-09-04',
-            'phone_number'  : '010-1234-1234',
-        }
-        response     = client.post('/users/signin', json.dumps(user), content_type='application/json')
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json(), {'MESSAGE' : 'INVALID_EMAIL_OR_PASSWORD'})
 
-    def test_signinview_post_fail_INVALID_PASSWORD(self):
-        client = Client()
+        headers = {'HTTP_Authorization' : self.access_token}
+
         user = {
-            'email'         : 'kst6294@gmail.com',
-            'password'      : '123qwe!@#QE',
-            'date_of_birth' : '1991-09-04',
-            'phone_number'  : '010-1234-1234',
+            'user_id' : self.user_id,
+            'password' : '23eewre!@#QWE',
         }
 
-        response        = client.post('/users/signin', json.dumps(user), content_type='application/json')
+        response = client.post('/users/password/check', json.dumps(user), content_type='application/json', **headers)
+
+
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json(), {'MESSAGE' : 'INVALID_EMAIL_OR_PASSWORD'})
+        self.assertEqual(response.json(), {'MESSAGE' : 'PASSWORD_IS_DIFFERENT'})
+
+
+    def test_character_delete_success(self):
+        client = Client()
+
+        headers = {'HTTP_Authorization' : self.access_token}
+
+        character_id = self.character_id
+
+        response = client.delete(f'/users/character/{character_id}', content_type='application/json', **headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'MESSAGE' : 'SUCCESS'})
+
+
+    def test_character_update_name_success(self):
+        client = Client()
+
+        headers = {'HTTP_Authorization' : self.access_token}
+
+        user = {
+            'user_id'      : self.user_id,
+            'new_password' : '2sdf#223QWE!@#',
+        }
+
+        character_id = self.character_id
+
+        character = {
+            'new_name' : '강아지,'
+        }
+
+        response = client.patch(f'/users/character/{character_id}',json.dumps(character), content_type='application/json', **headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'MESSAGE' : 'SUCCESS'})
+
+class CharacterViewTest(TestCase):
+    def setUp(self):
+        password        = '123qwe!@#QWE'
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+        user = User(
+            email         = 'kst6294@gmail.com',
+            password      = hashed_password,
+            date_of_birth = '1991-09-04',
+            phone_number  = '010-1234-1234',
+        )
+
+        user.save()
+        self.access_token = jwt.encode({'id' : User.objects.get(id=user.id).id}, SECRET_KEY, algorithm=ALGORITHM)
+        self.user    = user
+        self.user_id = user.id
+
+        character = Character(
+            name = '사장님',
+            user_id = self.user_id,
+        )
+
+        character.save()
+        self.character    = character
+        self.character_id = character.id
+
+
+    def tearDown(self):
+        User.objects.all().delete()
+
+    def test_character_read_success(self):
+        client = Client()
+
+        headers = {'HTTP_Authorization' : self.access_token}
+
+        response = client.get('/users/character', content_type='application/json', **headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'MESSAGE' : 'SUCCESS', 'RESULTS' : [
+            {
+                'id' : self.character_id,
+                'name' : self.character.name,
+                'profile_image_url' : '',
+            }
+        ]})
+
+    def test_character_create_success(self):
+        client = Client()
+
+        headers = {'HTTP_Authorization' : self.access_token}
+
+        character = {
+            'name' : '순대',
+        }
+
+        response = client.post('/users/character', json.dumps(character), content_type='application/json', **headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'MESSAGE' : 'SUCCESS'})
+
+    def test_character_delete_success(self):
+        client = Client()
+
+        headers = {'HTTP_Authorization' : self.access_token}
+
+        character_id = self.character_id
+
+        response = client.delete(f'/users/character/{character_id}', content_type='application/json', **headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'MESSAGE' : 'SUCCESS'})
+
+
+    def test_character_update_name_success(self):
+        client = Client()
+
+        headers = {'HTTP_Authorization' : self.access_token}
+
+        character_id = self.character_id
+
+        character = {
+            'new_name' : '강아지,'
+        }
+
+        response = client.patch(f'/users/character/{character_id}',json.dumps(character), content_type='application/json', **headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'MESSAGE' : 'SUCCESS'})
+
+
+    def test_character_update_image_success(self):
+        client = Client()
+
+        headers = {'HTTP_Authorization' : self.access_token}
+
+        character_id = self.character_id
+
+        character = {
+            'new_profile_image_url' : 'http://www.google.co.kr',
+        }
+
+        response = client.patch(f'/users/character/{character_id}',json.dumps(character), content_type='application/json', **headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'MESSAGE' : 'SUCCESS'})
+
 
