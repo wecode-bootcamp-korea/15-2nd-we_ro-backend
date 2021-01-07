@@ -1,4 +1,8 @@
 from django.urls import path
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 501757a (Add: Music API)
 from music.views import AlbumIDView, AlbumsView, MusicsView, MusicIDView, CountryMusicView, ArtistsView, ArtistIDView
 
 urlpatterns = [

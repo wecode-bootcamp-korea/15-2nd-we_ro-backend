@@ -91,9 +91,6 @@ class MusicInfoTest(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_musicinfo_get_fail(self):
-        # client = Client()
-        # response = client.get('/music/info')
-
         client   = Client()
         response = self.client.get('/music/infol')
         self.assertEqual(response.status_code, 404)
@@ -193,7 +190,7 @@ class CountryMusicTest(TestCase):
 
 class ArtistInfoTest(TestCase):
     maxDiff = None
-    
+
     def setUp(self):
         client = Client()
         AlbumType.objects.create(

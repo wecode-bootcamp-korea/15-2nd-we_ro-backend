@@ -31,23 +31,23 @@ class MusicsView(View):
         musics     = Music.objects.all()
         music_info = [
                 {
-                    'rank':          music.id,
-                    'title':         music.name,
-                    'country':       music.album.country.name,
-                    'url':           music.streaming_url,
-                    'imgUrl':        music.album.image_url,
-                    'album':         music.album.name,
-                    'artist':        music.artist.name,
-                    'rated_r':       music.musicdetail.is_rated_r,
-                    'popularity':    music.musicdetail.play_count,
-                    'lyric':         music.musicdetail.lyric,
-                    'artist_type':   music.artist.artist_type.name,
-                    'artist_gender': music.artist.gender.name,
-                    'genre':         music.album.albumgenre_set.get().genre.name,
-                    'emotion':       music.album.emotion.name,
-                    'mood':          music.album.mood.name,
-                    'chart':         music.album.chart.name,
-        } for music in musics[offset:offset+limit]]
+                    'rank'         :    music.id,
+                    'title'        :    music.name,
+                    'country'      :    music.album.country.name,
+                    'url'          :    music.streaming_url,
+                    'imgUrl'       :    music.album.image_url,
+                    'album'        :    music.album.name,
+                    'artist'       :    music.artist.name,
+                    'rated_r'      :    music.musicdetail.is_rated_r,
+                    'popularity'   :    music.musicdetail.play_count,
+                    'lyric'        :    music.musicdetail.lyric,
+                    'artist_type'  :    music.artist.artist_type.name,
+                    'artist_gender':    music.artist.gender.name,
+                    'genre'        :    music.album.albumgenre_set.genre.name,
+                    'emotion'      :    music.album.emotion.name,
+                    'mood'         :    music.album.mood.name,
+                    'chart'        :    music.album.chart.name,
+        } for music in musics [offset:offset+limit]]
         return JsonResponse({'MusicInfo': music_info}, status=200)
 
 # 국가에 따른 음악 차트
@@ -60,7 +60,7 @@ class CountryMusicView(View):
 
             music_list=[
                 {
-                    'id'           :    music.id,
+                    'rank'         :    music.id,
                     'title'        :    music.name,
                     'country'      :    music.album.country.name,
                     'url'          :    music.streaming_url,
@@ -153,7 +153,7 @@ class ArtistIDView(View):
                         'release_date':   album.release_date,
                         'country'     :   album.country.name,
                         'type'        :   album.album_type.name,
-                            }for album in artist.album_set.all()],
+
 
                  'music': [
                         {
@@ -166,7 +166,6 @@ class ArtistIDView(View):
             return JsonResponse({'aritst': artist_info}, status=200)
         except Artist.DoesNotExist:
             JsonResponse({'MESSAGE' : 'MUSIC_ID_NOT_FOUND'}, status=404)
-
 # 전체 앨범
 
 class AlbumsView(View):
@@ -195,9 +194,8 @@ class AlbumsView(View):
                             'id'       :  music.id,
                             'name'     :  music.name,
                         'streaming_url': music.streaming_url,
-                        }for music in album.music_set.all()],
-            }for album in albums
-        [offset:offset+limit]]
+                       }for music in album.music_set.all()],
+            }for album in albums[offset:offset+limit]]
         return JsonResponse({'albums': album_info}, status=200)
 
 # 특정 앨범 정보
