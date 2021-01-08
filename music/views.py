@@ -27,7 +27,7 @@ class MusicsView(View):
         LIMIT      = 70
         OFFSET     = 0
 
-        musics     = Music.objects.select_related('album', 'album__country', 'artist', 'artist__genre')
+        musics     = Music.objects.select_related('album', 'album__country', 'artist', 'artist__genre').order_by('id')
         music_info = [
                 {
                     'rank'         :    music.id,
@@ -40,12 +40,13 @@ class MusicsView(View):
         } for music in musics [OFFSET:OFFSET+LIMIT]]
         return JsonResponse({'MusicInfo': music_info}, status=200)
 
+
 class CountryMusicView(View):
     def get(self, request, country_id):
         try:
-            limit = 50
-            offset = 0
-            musics = Music.objects.filter(album__country_id = country_id).select_related('country', 'album', 'artist').prefetch_related('album__genre')
+            LIMIT = 50
+            OFFSET = 0
+            musics = Music.objects.filter(album__country_id = country_id).select_related('album__country', 'album', 'artist', 'artist__genre').prefetch_related('album__genre', 'musicdetail').order_by('id')
 
             music_info=[
                 {
