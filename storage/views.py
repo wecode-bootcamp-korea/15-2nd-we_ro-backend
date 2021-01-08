@@ -121,13 +121,12 @@ class MylistMusicView(View):
         try:
             signed_character = request.character
 
-
-            mylist_music = MylistMusic.objects.filter(mylist__character_id=signed_character.id, mylist_id=mylist_id).select_related('music', 'music__artist', 'music__album').prefetch_related('music__musicdetail__set')
+            mylist_music = MylistMusic.objects.filter(mylist__character_id=signed_character.id, mylist_id=mylist_id).select_related('music', 'music__artist', 'music__album')
             results = [
                 {
                     'music_id'   : mylist.music.id,
                     'music_name' : mylist.music.name,
-                    'music_artist' : mylist.music.artist.name,
+                    'music_artist' : mylist.music.album.name,
                     'music_image' : mylist.music.album.image_url,
                 } for mylist in mylist_music.all()]
 
