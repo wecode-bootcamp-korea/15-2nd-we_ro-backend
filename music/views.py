@@ -26,7 +26,7 @@ from .models import (
 # 국가별 / 장르별 / play_count 별
 class MusicsView(View):
     def get(self, request):
-        limit      = int(request.GET.get("limit",15))
+        limit      = int(request.GET.get("limit",70))
         offset     = int(request.GET.get("offset",0))
         musics     = Music.objects.all()
         music_info = [
@@ -54,7 +54,7 @@ class MusicsView(View):
 class CountryMusicView(View):
     def get(self, request, country_id):
         try:
-            limit  = int(request.GET.get("limit",15))
+            limit  = int(request.GET.get("limit",50))
             offset = int(request.GET.get("offset",0))
             musics = Music.objects.filter(id__in = Album.objects.filter(country = country_id)).select_related('album', 'artist', 'musicdetail').order_by('-musicdetail__play_count')
 
@@ -172,6 +172,8 @@ class ArtistIDView(View):
 class AlbumsView(View):
     def get(self, request):
 
+        limit      = int(request.GET.get("limit",50))
+        offset     = int(request.GET.get("offset",0))
         sort     = request.GET.get('sort', None)
         ordering = request.GET.get('ordering', None)
         albums   = Album.objects.select_related('album_type','country').prefetch_related('genre','emotion','mood','artist','music_set',  'music_set__musicdetail').annotate(total_album_play_count=Sum('music__musicdetail__play_count'))
